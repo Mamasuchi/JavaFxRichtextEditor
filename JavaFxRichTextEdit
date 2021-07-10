@@ -1,0 +1,324 @@
+package sample;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.io.*;
+import java.util.Formatter;
+import java.util.Scanner;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.UndoableEditEvent;
+import javax.swing.event.UndoableEditListener;
+import javax.swing.plaf.metal.MetalLookAndFeel;
+import javax.swing.plaf.metal.OceanTheme;
+import javafx.fxml.FXMLLoader;
+
+import javafx.geometry.Bounds;
+import javafx.scene.input.KeyCombination;
+import javafx.scene.control.Separator;
+import javafx.stage.FileChooser;
+import org.w3c.dom.Text;
+
+import javax.swing.JSpinner.DefaultEditor;
+import javax.swing.JFrame;
+import javax.swing.undo.UndoManager;
+import javax.xml.stream.Location;
+
+public class Controller extends JFrame implements ActionListener {
+    JTextArea text;
+    private JMenuBar mb;
+    private JMenuItem close,save, saveAs,open,newSlide,undo,redo,cut,copy,paste,selectAll,print;
+    private JMenu menu,edit;
+    private   JScrollPane scrollY;
+    JSpinner fontSize;
+    private JFrame frame;
+    JLabel font;
+    JButton fontColor,bold,italic;
+    JComboBox arial;
+    private JPanel panel;
+    Font f;
+    private File openFile;
+    UndoManager undoManager0 = new UndoManager();
+
+    Controller(){
+        frame = new JFrame();
+    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    frame.setTitle("CyberSex");
+        try {
+            // Set metal look and feel
+            String mlf= "com.sun.java.swing.plaf.windows.WindowsLookAndFeel";
+            UIManager.setLookAndFeel(mlf);
+
+            // Set theme to ocean
+            MetalLookAndFeel.setCurrentTheme(new OceanTheme());
+        }
+        catch(Exception e) {
+        }
+    frame.setSize(699,710);
+    frame.setLayout(new FlowLayout());
+    frame.setLocationRelativeTo(null);
+    //selecting our text box area
+    text= new JTextArea();
+    text.getDocument().addUndoableEditListener(undoManager0);
+
+
+        //scrollbar horizantal
+        scrollY= new JScrollPane(text);
+        scrollY.setPreferredSize(new Dimension(655,605));
+        scrollY.setWheelScrollingEnabled(true);
+        scrollY.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        scrollY.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
+
+        //fontSize Spinner
+        font= new JLabel("Font: ");
+        fontSize =new JSpinner();
+        fontSize.setPreferredSize(new Dimension(48,25));
+        fontSize.setValue(12);
+
+        fontSize.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                text.setFont(new Font(text.getFont().getFamily(),Font.PLAIN,(int) fontSize.getValue()));
+
+            }
+        });
+        frame.add(font); //label added to spinner
+
+        //font color button
+        fontColor = new JButton("Color");
+        panel = new JPanel();//panel
+        fontColor.setAlignmentY(Component.CENTER_ALIGNMENT);
+        fontColor.addActionListener(this);
+
+        //arialBox
+        String[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
+        arial=new JComboBox(fonts);
+        arial.addActionListener(this);
+        arial.setSelectedItem("Arial");
+
+        //Menu Bar
+    mb= new JMenuBar();
+
+    //button for Bold and Italic
+        bold=new JButton("Bold");
+        italic= new JButton("Italic");
+        bold.addActionListener(this);
+        italic.addActionListener(this);
+
+
+    //J menu File location
+     menu= new JMenu("File");
+    newSlide= new JMenuItem("New");
+     open= new JMenuItem("Open");
+     open.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, Event.CTRL_MASK));
+    saveAs= new JMenuItem("Save As");
+
+    save= new JMenuItem("Save");
+    print = new JMenuItem("Print");
+    close= new JMenuItem("Close");
+
+
+    //add to Jmenu
+    menu.add(newSlide);
+    menu.add(open);
+    menu.add(saveAs);
+    menu.add(save);
+    //seperator
+        menu.addSeparator();
+        menu.add(print);
+    menu.addSeparator();
+    menu.add(close);
+    //add menu to menubar
+    mb.add(menu);
+
+    //add action listener
+        newSlide.addActionListener(this);
+        open.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                open();
+            }
+        });
+        saveAs.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                save_As();
+            }
+        });
+        save.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                save();
+            }
+        });
+
+        print.addActionListener(this);
+        close.addActionListener(this);
+
+    //JMenu Edit File location
+    edit= new JMenu("Edit");
+    undo= new JMenuItem("Undo");
+    undo.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z, Event.CTRL_MASK));
+    redo= new JMenuItem("Redo");
+    redo.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Y, Event.CTRL_MASK));
+    cut=new JMenuItem("Cut");
+    cut.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_X, Event.CTRL_MASK));
+    copy=new JMenuItem("Copy");
+    copy.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, Event.CTRL_MASK));
+    paste=new JMenuItem("Paste");
+        paste.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, Event.CTRL_MASK));
+        selectAll=new JMenuItem("Select All");
+        selectAll.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_A, Event.CTRL_MASK));
+    //add action listener
+    undo.addActionListener(this);
+    redo.addActionListener(this);
+    cut.addActionListener(this);
+    copy.addActionListener(this);
+    paste.addActionListener(this);
+    selectAll.addActionListener(this);
+
+    //add to Jmenu
+    edit.add(undo);
+    edit.add(redo);
+    edit.addSeparator();
+    edit.add(cut);
+    edit.add(copy);
+    edit.add(paste);
+    edit.add(selectAll);
+    //add to menubar
+    mb.add(edit);
+
+    //text command so when its near the corner of the page it goes to the next line
+    text.setLineWrap(false); //turn back to true when u can
+    text.setWrapStyleWord(true);
+    text.setFont(new Font("Arial",Font.PLAIN,12));
+    frame.setJMenuBar(mb);
+    frame.add(fontSize);
+    frame.add(fontColor);
+    frame.add(arial);
+    frame.add(bold);
+    frame.add(italic);
+    frame.add(scrollY);
+
+
+    frame.setVisible(true);
+
+    }
+    private void open(){
+        try {
+            JFileChooser file = new JFileChooser("E:\\save");
+            file.setDialogTitle("Select a text file to open");
+            file.showOpenDialog(null);
+
+            openFile= file.getSelectedFile();
+            if(openFile!=null && !openFile.exists()){
+                openFile=null;
+                JOptionPane.showMessageDialog(null,"Failed To Open File, File does not Exist!", "Error",JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            Scanner reader= new Scanner(openFile);
+            String contents= "";
+            while (reader.hasNextLine()){
+                contents += reader.nextLine() + '\n';
+            }
+                reader.close();
+            text.setText(contents);
+        }
+        catch (Exception e1){
+            e1.printStackTrace();
+        }
+    }
+
+    private void save_As(){
+        try{
+           JFileChooser file=new JFileChooser("E:\\save");
+            file.setDialogTitle("Save Now File");
+            file.showOpenDialog(null);
+            openFile = file.getSelectedFile();
+            save();
+        } catch (Exception e1){
+            e1.printStackTrace();
+        }
+    }
+    private void save(){
+            try{
+                //error opening
+                if(openFile == null){
+                    JOptionPane.showMessageDialog(null, "Failed to save File");
+                    return;
+                }
+                String contents = text.getText();
+                Formatter form = new Formatter(openFile);
+                form.format("%s",contents); //the %s changes the capitilization on the word, if you change s to capital s All the words you save turn to capital.
+                form.close();
+            }
+            catch (Exception e1){
+                e1.printStackTrace();
+            }
+        }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if(e.getSource()==fontColor){
+            JColorChooser colorChooser = new JColorChooser();
+            Color color= colorChooser.showDialog(null,"Choose a color",Color.BLACK);
+            text.setForeground(color);
+        }
+        //bold button
+        if(e.getSource()==bold){
+             f= new Font("Serif",Font.BOLD,12);
+                text.setFont(f);
+        }
+        if(e.getSource()==italic){
+            f= new Font("Serif",Font.ITALIC,12);
+            text.setFont(f);
+        }
+
+        if(e.getSource()==arial){
+            text.setFont(new Font((String)arial.getSelectedItem(),Font.PLAIN, text.getFont().getSize()));
+        }
+        if(e.getSource()==cut){
+            text.cut();
+        }
+        if(e.getSource()==copy){
+            text.copy();
+        }
+        if (e.getSource()==paste){
+            text.paste();
+        }
+        else if (e.getSource()==newSlide){
+            text.setText("");
+        }
+        //selectAll
+        if (e.getSource()==selectAll){
+            text.selectAll();
+        }
+        //print
+       else if(e.getSource()==print){
+            try{
+                text.print();
+            }
+            catch(Exception evt){
+                JOptionPane.showMessageDialog(frame, evt.getMessage());
+            }
+        }
+       if(e.getSource()==undo){
+           for(int i=0; i<text.getTabSize(); i++){
+           if (undoManager0.canUndo()) {
+               undoManager0.undo();
+       }}}
+       if (e.getSource()==redo){
+           for(int i=0; i<text.getTabSize(); i++) {
+               if (undoManager0.canRedo()) {
+                   undoManager0.redo();
+               }
+           }}
+    //close document
+        if(e.getSource()==close){
+            System.exit(0);
+        }
+    }
+}
